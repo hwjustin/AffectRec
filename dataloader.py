@@ -1,10 +1,13 @@
 import pandas as pd
 import torch
+import torchvision
 from enum import Enum 
+from PIL import Image
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
+import torchvision.transforms as transforms
 
 # Definition of Expressions
 class Expression(Enum):
@@ -20,18 +23,20 @@ class Expression(Enum):
     UNCERTAIN = "9"
     NONFACE = "10"
 
-class ToyDataset(Dataset):
-	def __init__(self, data, labels):
-		self.labels = labels
-		self.data = data
+class AffectNetDataset(Dataset):
+    def __init__(self, image_paths, labels, transform):
+        self.labels = labels
+        self.image_paths = image_paths
+        self.transform = transform
+        
+    def __len__(self):
+        return self.labels.shape[0]
 
-	def __len__(self):
-		return self.labels.shape[0]
+    def __getitem__(self, idx):
+        image = Image.open(f"dataset/images/{self.image_paths[idx]}").convert("RGB")
+        return self.transform(image), self.labels[idx]
 
-	def __getitem__(self, idx):
-            return self.data[idx], self.labels[idx]
-
-class AffectNetDataset(LightningDataModule):
+class AffectNetDataModule(LightningDataModule):
     def __init__(self):
         super().__init__()
         self.train_files = pd.read_csv("dataset/filelists/training.csv") # shuffle if needed: .sample(frac=1, random_state=27)
@@ -39,13 +44,20 @@ class AffectNetDataset(LightningDataModule):
         header = self.train_files.columns
         self.val_files.columns = header
 
+        # Transform function for Image data
+        self.transform = transforms.Compose([
+                transforms.Resize((224, 224)),  # Resize images to 224x224 for example
+                transforms.ToTensor(),  # Convert to tensor
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize with ImageNet statistics
+            ])
+
         self.train_images = self.train_files['subDirectory_filePath']
         self.train_labels=self.train_files['expression']
-        self.train_dataset = ToyDataset(self.train_images, self.train_labels)
+        self.train_dataset = AffectNetDataset(self.train_images, self.train_labels, self.transform)
 
         self.val_images = self.val_files['subDirectory_filePath']
         self.val_labels=self.val_files['expression']
-        self.val_dataset = ToyDataset(self.val_images, self.val_labels)
+        self.val_dataset = AffectNetDataset(self.val_images, self.val_labels, self.transform)
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=10)
@@ -59,10 +71,10 @@ class AffectNetDataset(LightningDataModule):
 # Testing the implementation
 if __name__ == "__main__":
     # Initialize AffectNetDataset
-    affectnet_data = AffectNetDataset()
+    affectnet_data = AffectNetDataModule()
     
     # Get DataLoader
-    train_loader = affectnet_data.val_dataloader()
+    train_loader = affectnet_data.train_dataloader()
     train_image, train_label = next(iter(train_loader))
-    print(f"train_images: {train_image}")
-    print(f"train_labels: {train_label}")
+    print(f"train_images: {train_image.shape}")
+    print(f"train_labels: {train_label.shape}")
