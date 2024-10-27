@@ -11,13 +11,13 @@ from torch.optim import lr_scheduler
 from tqdm import tqdm
 
 # Load the annotations for training and validation from separate CSV files
-IMAGE_FOLDER = "../drive/MyDrive/L344_Mini_Project/datasets/images/"
-IMAGE_FOLDER_TEST = "../drive/MyDrive/L344_Mini_Project/datasets/images/"
+IMAGE_FOLDER = "../../drive/MyDrive/L344_Mini_Project/datasets/images/"
+IMAGE_FOLDER_TEST = "../../drive/MyDrive/L344_Mini_Project/datasets/images/"
 train_annotations_path = (
-    "../drive/MyDrive/L344_Mini_Project/datasets/filelists/training.csv"
+    "../../drive/MyDrive/L344_Mini_Project/datasets/filelists/training.csv"
 )
 valid_annotations_path = (
-    "../drive/MyDrive/L344_Mini_Project/datasets/filelists/validation.csv"
+    "../../drive/MyDrive/L344_Mini_Project/datasets/filelists/validation.csv"
 )
 train_annotations_df = pd.read_csv(train_annotations_path)
 valid_annotations_df = pd.read_csv(valid_annotations_path)
@@ -226,4 +226,4 @@ for epoch in range(NUM_EPOCHS):
     if valid_loss < best_valid_loss:
         best_valid_loss = valid_loss
         print(f"Saving model at epoch {epoch+1}")
-        torch.save(MODEL.state_dict(), "../drive/MyDrive/L344_Mini_Project/model.pt")  # Save the best model
+        torch.save(MODEL.state_dict(), "../../drive/MyDrive/L344_Mini_Project/model.pt")  # Save the best model
