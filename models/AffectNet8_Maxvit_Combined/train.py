@@ -123,10 +123,10 @@ valid_dataset = CustomDataset(
     balance=False,
 )
 train_loader = DataLoader(
-    train_dataset, batch_size=BATCHSIZE, shuffle=True, num_workers=48
+    train_dataset, batch_size=BATCHSIZE, shuffle=True, num_workers=32
 )
 valid_loader = DataLoader(
-    valid_dataset, batch_size=BATCHSIZE, shuffle=False, num_workers=48
+    valid_dataset, batch_size=BATCHSIZE, shuffle=False, num_workers=32
 )
 
 # ***** Define the model *****
