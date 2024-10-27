@@ -22,9 +22,13 @@ valid_annotations_path = (
 train_annotations_df = pd.read_csv(train_annotations_path)
 valid_annotations_df = pd.read_csv(valid_annotations_path)
 
+# add headers for validation.csv
+header = train_annotations_df.columns
+valid_annotations_df.columns = header
+
 
 # Set parameters
-BATCHSIZE = 128
+BATCHSIZE = 64 # original batch size is 128, CUDA out of memory for P100
 NUM_EPOCHS = 20
 LR = 4e-5
 MODEL = models.maxvit_t(weights="DEFAULT")
@@ -33,11 +37,15 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # **** Create dataset and data loaders ****
 class CustomDataset(Dataset):
-    def __init__(self, dataframe, root_dir, transform=None, balance=False):
-        self.dataframe = dataframe
+    def __init__(self, dataframe, root_dir, valid_expressions, transform=None, balance=False):
         self.transform = transform
         self.root_dir = root_dir
         self.balance = balance
+
+        # filter out invalid expressions
+        if valid_expressions is not None:
+            dataframe = dataframe[dataframe["expression"].isin(valid_expressions)]
+        self.dataframe = dataframe
 
         if self.balance:
             self.dataframe = self.balance_dataset()
@@ -47,7 +55,7 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
         image_path = os.path.join(
-            self.root_dir, f"{self.dataframe['subDirectory_filePath'].iloc[idx]}.jpg"
+            self.root_dir, f"{self.dataframe['subDirectory_filePath'].iloc[idx]}"
         )
         if os.path.exists(image_path):
             image = Image.open(image_path)
@@ -73,6 +81,7 @@ class CustomDataset(Dataset):
 
 transform = transforms.Compose(
     [
+        transforms.Resize((224, 224)), # resize every pitcure to 224*224
         transforms.RandomHorizontalFlip(0.5),
         transforms.RandomGrayscale(0.01),
         transforms.RandomRotation(10),
@@ -82,6 +91,7 @@ transform = transforms.Compose(
         transforms.RandomPerspective(
             distortion_scale=0.2, p=0.5
         ),  # can be helpful if your images might have varying perspectives.
+        
         transforms.ToTensor(),  # saves image as tensor (automatically divides by 255)
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         transforms.RandomErasing(
@@ -92,6 +102,7 @@ transform = transforms.Compose(
 
 transform_valid = transforms.Compose(
     [
+        transforms.Resize((224, 224)), # resize every pitcure to 224*224
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ]
@@ -100,12 +111,14 @@ transform_valid = transforms.Compose(
 train_dataset = CustomDataset(
     dataframe=train_annotations_df,
     root_dir=IMAGE_FOLDER,
+    valid_expressions=[0, 1, 2, 3, 4, 5, 6, 7],
     transform=transform,
     balance=False,
 )
 valid_dataset = CustomDataset(
     dataframe=valid_annotations_df,
     root_dir=IMAGE_FOLDER_TEST,
+    valid_expressions=[0, 1, 2, 3, 4, 5, 6, 7],
     transform=transform_valid,
     balance=False,
 )
@@ -128,6 +141,7 @@ MODEL.classifier = nn.Sequential(
     nn.Tanh(),
     nn.Linear(block_channels, 10, bias=False),
 )
+
 MODEL.to(DEVICE)  # Put the model to the GPU
 
 # Define (weighted) loss function
