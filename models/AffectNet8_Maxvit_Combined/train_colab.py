@@ -28,7 +28,7 @@ valid_annotations_df.columns = header
 
 
 # Set parameters
-BATCHSIZE = 64 # original batch size is 128, CUDA out of memory for P100
+BATCHSIZE = 128 # original batch size is 128, CUDA out of memory for P100
 NUM_EPOCHS = 20
 LR = 4e-5
 MODEL = models.maxvit_t(weights="DEFAULT")
@@ -223,7 +223,9 @@ for epoch in range(NUM_EPOCHS):
         f", Training Accuracy: {train_accuracy:.2f}%, "
     )
 
-    if valid_loss < best_valid_loss:
-        best_valid_loss = valid_loss
+    avg_valid_loss = valid_loss/len(valid_loader)
+
+    if avg_valid_loss < best_valid_loss:
+        best_valid_loss = avg_valid_loss
         print(f"Saving model at epoch {epoch+1}")
         torch.save(MODEL.state_dict(), "../../../drive/MyDrive/L344_Mini_Project/model.pt")  # Save the best model
