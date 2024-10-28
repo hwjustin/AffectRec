@@ -227,5 +227,7 @@ for epoch in range(NUM_EPOCHS):
 
     if avg_valid_loss < best_valid_loss:
         best_valid_loss = avg_valid_loss
-        print(f"Saving model at epoch {epoch+1}")
-        torch.save(MODEL.state_dict(), "../../../drive/MyDrive/L344_Mini_Project/model.pt")  # Save the best model
+        print(f"epoch {epoch+1} generates better result!")
+    
+    print(f"Saving model at epoch {epoch+1}")
+    torch.save(MODEL.state_dict(), f"../../../drive/MyDrive/L344_Mini_Project/model_epoch{epoch+1}.pt")  # Save the best model
