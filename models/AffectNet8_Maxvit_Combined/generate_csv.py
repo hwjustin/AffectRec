@@ -45,7 +45,7 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
         image_path = os.path.join(
-            self.root_dir, f"{self.dataframe['number'].iloc[idx]}.jpg"
+            self.root_dir, f"{self.dataframe['subDirectory_filePath'].iloc[idx]}"
         )
         if os.path.exists(image_path):
             image = Image.open(image_path)
@@ -54,8 +54,8 @@ class CustomDataset(Dataset):
                 "RGB", (224, 224), color="white"
             )  # Handle missing image file
 
-        classes = torch.tensor(self.dataframe["exp"].iloc[idx], dtype=torch.long)
-        labels = torch.tensor(self.dataframe.iloc[idx, 2:4].values, dtype=torch.float32)
+        classes = torch.tensor(self.dataframe["expression"].iloc[idx], dtype=torch.long)
+        labels = torch.tensor(self.dataframe[['valence', 'arousal']].iloc[idx].values, dtype=torch.float32)
 
         if self.transform:
             image = self.transform(image)
