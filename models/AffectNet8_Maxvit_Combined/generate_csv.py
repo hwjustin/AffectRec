@@ -8,10 +8,10 @@ import torch.nn as nn
 from PIL import Image
 
 # Load the annotations for training and validation from separate CSV files
-IMAGE_FOLDER = "/data/AffectNet/train_set/images/"
-IMAGE_FOLDER_TEST = "/data/AffectNet/val_set/images/"
+IMAGE_FOLDER = "../../../drive/MyDrive/L344_Mini_Project/datasets/images/"
+IMAGE_FOLDER_TEST = "../../../drive/MyDrive/L344_Mini_Project/datasets/images/"
 valid_annotations_path = (
-    "../../affectnet_annotations/val_set_annotation_without_lnd.csv"
+    "../../../drive/MyDrive/L344_Mini_Project/datasets/filelists/validation.csv"
 )
 valid_annotations_df = pd.read_csv(valid_annotations_path)
 
