@@ -93,7 +93,7 @@ MODEL.classifier = nn.Sequential(
 MODEL.to(DEVICE)  # Put the model to the GPU
 
 # Set the model to evaluation mode
-MODEL.load_state_dict(torch.load("model.pt"))
+MODEL.load_state_dict(torch.load("../../../drive/MyDrive/L344_Mini_Project/model_epoch20.pt"))
 MODEL.to(DEVICE)
 MODEL.eval()
 
@@ -142,4 +142,4 @@ df = pd.DataFrame(
         "aro_true": all_true_aro,
     }
 )
-df.to_csv("inference.csv", index=False)
+df.to_csv("../../../drive/MyDrive/L344_Mini_Project/inference.csv", index=False)
