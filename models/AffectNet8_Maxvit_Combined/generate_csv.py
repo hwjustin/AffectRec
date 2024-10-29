@@ -10,10 +10,18 @@ from PIL import Image
 # Load the annotations for training and validation from separate CSV files
 IMAGE_FOLDER = "../../../drive/MyDrive/L344_Mini_Project/datasets/images/"
 IMAGE_FOLDER_TEST = "../../../drive/MyDrive/L344_Mini_Project/datasets/images/"
+train_annotations_path = (
+    "../../../drive/MyDrive/L344_Mini_Project/datasets/filelists/training.csv"
+)
 valid_annotations_path = (
     "../../../drive/MyDrive/L344_Mini_Project/datasets/filelists/validation.csv"
 )
+train_annotations_df = pd.read_csv(train_annotations_path)
 valid_annotations_df = pd.read_csv(valid_annotations_path)
+
+# add headers for validation.csv
+header = train_annotations_df.columns
+valid_annotations_df.columns = header
 
 # Set parameters
 BATCHSIZE = 128
