@@ -31,11 +31,15 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # **** Create dataset and data loaders ****
 class CustomDataset(Dataset):
-    def __init__(self, dataframe, root_dir, transform=None, balance=False):
-        self.dataframe = dataframe
+    def __init__(self, dataframe, root_dir, valid_expressions, transform=None, balance=False):
         self.transform = transform
         self.root_dir = root_dir
         self.balance = balance
+
+        # filter out invalid expressions
+        if valid_expressions is not None:
+            dataframe = dataframe[dataframe["expression"].isin(valid_expressions)]
+        self.dataframe = dataframe
 
         if self.balance:
             self.dataframe = self.balance_dataset()
@@ -71,6 +75,7 @@ class CustomDataset(Dataset):
 
 transform_valid = transforms.Compose(
     [
+        transforms.Resize((224, 224)), # resize every pitcure to 224*224
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ]
@@ -79,6 +84,7 @@ transform_valid = transforms.Compose(
 valid_dataset = CustomDataset(
     dataframe=valid_annotations_df,
     root_dir=IMAGE_FOLDER_TEST,
+    valid_expressions=[0, 1, 2, 3, 4, 5, 6, 7],
     transform=transform_valid,
     balance=False,
 )
