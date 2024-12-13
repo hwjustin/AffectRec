@@ -11,20 +11,16 @@ from torch.optim import lr_scheduler
 from tqdm import tqdm
 
 # Load the annotations for training and validation from separate CSV files
-IMAGE_FOLDER = "../../../drive/MyDrive/L344_Mini_Project/datasets/images/"
-IMAGE_FOLDER_TEST = "../../../drive/MyDrive/L344_Mini_Project/datasets/images/"
+IMAGE_FOLDER = "dataset_new/cropped_aligned"
+IMAGE_FOLDER_TEST = "dataset_new/cropped_aligned"
 train_annotations_path = (
-    "../../../drive/MyDrive/L344_Mini_Project/datasets/filelists/training.csv"
+    "dataset_new/csv/annotations_train.csv"
 )
 valid_annotations_path = (
-    "../../../drive/MyDrive/L344_Mini_Project/datasets/filelists/validation.csv"
+    "dataset_new/csv/annotations_validation.csv"
 )
 train_annotations_df = pd.read_csv(train_annotations_path)
 valid_annotations_df = pd.read_csv(valid_annotations_path)
-
-# add headers for validation.csv
-header = train_annotations_df.columns
-valid_annotations_df.columns = header
 
 
 # Set parameters
@@ -55,7 +51,7 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
         image_path = os.path.join(
-            self.root_dir, f"{self.dataframe['subDirectory_filePath'].iloc[idx]}"
+            self.root_dir, f"{self.dataframe['filename'].iloc[idx]}", f"{self.dataframe['index'].iloc[idx]}.jpg"
         )
         if os.path.exists(image_path):
             image = Image.open(image_path)
@@ -230,4 +226,4 @@ for epoch in range(NUM_EPOCHS):
         print(f"epoch {epoch+1} generates better result!")
     
     print(f"Saving model at epoch {epoch+1}")
-    torch.save(MODEL.state_dict(), f"../../../drive/MyDrive/L344_Mini_Project/model_epoch{epoch+1}.pt")  # Save the best model
+    torch.save(MODEL.state_dict(), f"results/model_epoch{epoch+1}.pt")  # Save the best model
