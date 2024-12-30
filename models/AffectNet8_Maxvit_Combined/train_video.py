@@ -14,13 +14,13 @@ from tqdm import tqdm
 IMAGE_FOLDER = "dataset_new/cropped_aligned"
 IMAGE_FOLDER_TEST = "dataset_new/cropped_aligned"
 train_annotations_path = (
-    "dataset_new/csv/annotations_train.csv"
+    "dataset_new/csv/annotations_train_shuffled_filtered.csv"
 )
 valid_annotations_path = (
-    "dataset_new/csv/annotations_validation.csv"
+    "dataset_new/csv/annotations_validation_shuffled_filtered.csv"
 )
-train_annotations_df = pd.read_csv(train_annotations_path)
-valid_annotations_df = pd.read_csv(valid_annotations_path)
+train_annotations_df = pd.read_csv(train_annotations_path, dtype={"filename": str, "index": str})
+valid_annotations_df = pd.read_csv(valid_annotations_path, dtype={"filename": str, "index": str})
 
 
 # Set parameters
@@ -142,7 +142,7 @@ MODEL.to(DEVICE)  # Put the model to the GPU
 
 # Define (weighted) loss function
 weights = torch.tensor(
-    [0.015605, 0.008709, 0.046078, 0.083078, 0.185434, 0.305953, 0.046934, 0.30821]
+    [0.0139, 0.1758, 0.4634, 0.1558, 0.0292, 0.0315, 0.1185, 0.0118]
 )
 criterion_cls = nn.CrossEntropyLoss(weights.to(DEVICE))
 criterion_cls_val = (
