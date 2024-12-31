@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 
 # Path to your CSV file
-csv_path = "dataset_new/csv/annotations_train_shuffled_filtered.csv"  # Replace with the actual path
+csv_path = "dataset_new/csv_new/annotation_train.csv"  # Replace with the actual path
 
 # Load the CSV file into a DataFrame
 df = pd.read_csv(csv_path, dtype={"filename": str, "index": str})
@@ -11,9 +11,18 @@ df = pd.read_csv(csv_path, dtype={"filename": str, "index": str})
 if "expression" not in df.columns:
     raise ValueError("The 'expression' column is missing in the CSV file!")
 
+# Filter out rows where 'expression' is -1
+df_filtered = df[df['expression'] != -1]
+
+# Filter out rows where 'valence' or 'arousal' are out of range
+df_filtered = df_filtered[
+    (df_filtered['valence'] >= -1) & (df_filtered['valence'] <= 1) &
+    (df_filtered['arousal'] >= -1) & (df_filtered['arousal'] <= 1)
+]
+
 # Calculate class frequencies
-class_counts = df['expression'].value_counts().sort_index()
-total_samples = len(df)
+class_counts = df_filtered['expression'].value_counts().sort_index()
+total_samples = len(df_filtered)
 num_classes = len(class_counts)
 
 # Compute weights inversely proportional to class frequencies

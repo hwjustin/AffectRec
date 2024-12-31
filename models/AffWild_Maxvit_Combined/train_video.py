@@ -11,20 +11,20 @@ from torch.optim import lr_scheduler
 from tqdm import tqdm
 
 # Load the annotations for training and validation from separate CSV files
-IMAGE_FOLDER = "dataset_new/cropped_aligned"
-IMAGE_FOLDER_TEST = "dataset_new/cropped_aligned"
+IMAGE_FOLDER = "dataset_new/cropped_aligned/"
+IMAGE_FOLDER_TEST = "dataset_new/cropped_aligned/"
 train_annotations_path = (
-    "dataset_new/csv/annotations_train_shuffled_filtered.csv"
+    "dataset_new/csv_new/annotation_train.csv"
 )
 valid_annotations_path = (
-    "dataset_new/csv/annotations_validation_shuffled_filtered.csv"
+    "dataset_new/csv_new/annotation_validation.csv"
 )
-train_annotations_df = pd.read_csv(train_annotations_path, dtype={"filename": str, "index": str})
-valid_annotations_df = pd.read_csv(valid_annotations_path, dtype={"filename": str, "index": str})
+train_annotations_df = pd.read_csv(train_annotations_path, dtype={"image": str})
+valid_annotations_df = pd.read_csv(valid_annotations_path, dtype={"image": str})
 
 
 # Set parameters
-BATCHSIZE = 128 # original batch size is 128, CUDA out of memory for P100
+BATCHSIZE = 64 # original batch size is 128, CUDA out of memory for P100
 NUM_EPOCHS = 20
 LR = 4e-5
 MODEL = models.maxvit_t(weights="DEFAULT")
@@ -41,6 +41,12 @@ class CustomDataset(Dataset):
         # filter out invalid expressions
         if valid_expressions is not None:
             dataframe = dataframe[dataframe["expression"].isin(valid_expressions)]
+        
+        dataframe = dataframe[
+            (dataframe["valence"] >= -1) & (dataframe["valence"] <= 1) &
+            (dataframe["arousal"] >= -1) & (dataframe["arousal"] <= 1)
+        ]
+
         self.dataframe = dataframe
 
         if self.balance:
@@ -51,7 +57,7 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
         image_path = os.path.join(
-            self.root_dir, f"{self.dataframe['filename'].iloc[idx]}", f"{self.dataframe['index'].iloc[idx]}.jpg"
+            self.root_dir, f"{self.dataframe['image'].iloc[idx]}"
         )
         if os.path.exists(image_path):
             image = Image.open(image_path)
@@ -142,7 +148,7 @@ MODEL.to(DEVICE)  # Put the model to the GPU
 
 # Define (weighted) loss function
 weights = torch.tensor(
-    [0.0139, 0.1758, 0.4634, 0.1558, 0.0292, 0.0315, 0.1185, 0.0118]
+    [0.0448, 0.1026, 0.4630, 0.1551, 0.0362, 0.0621, 0.1035, 0.0329]
 )
 criterion_cls = nn.CrossEntropyLoss(weights.to(DEVICE))
 criterion_cls_val = (

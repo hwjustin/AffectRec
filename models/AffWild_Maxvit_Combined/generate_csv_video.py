@@ -11,11 +11,11 @@ from PIL import Image
 # Load the annotations for training and validation from separate CSV files
 IMAGE_FOLDER_TEST = "dataset_new/cropped_aligned"
 valid_annotations_path = (
-    "dataset_new/csv/annotations_validation.csv"
+    "dataset_new/csv_new/annotation_validation.csv"
 )
 
 
-valid_annotations_df = pd.read_csv(valid_annotations_path, dtype={"filename": str, "index": str})
+valid_annotations_df = pd.read_csv(valid_annotations_path, dtype={"image": str})
 
 
 # Set parameters
@@ -35,7 +35,14 @@ class CustomDataset(Dataset):
         # filter out invalid expressions
         if valid_expressions is not None:
             dataframe = dataframe[dataframe["expression"].isin(valid_expressions)]
+
+        dataframe = dataframe[
+            (dataframe["valence"] >= -1) & (dataframe["valence"] <= 1) &
+            (dataframe["arousal"] >= -1) & (dataframe["arousal"] <= 1)
+        ]
         self.dataframe = dataframe
+
+
 
         if self.balance:
             self.dataframe = self.balance_dataset()
@@ -45,7 +52,7 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, idx):
         image_path = os.path.join(
-            self.root_dir, f"{self.dataframe['filename'].iloc[idx]}", f"{self.dataframe['index'].iloc[idx]}.jpg"
+            self.root_dir, f"{self.dataframe['image'].iloc[idx]}"
         )
       
         if os.path.exists(image_path):
@@ -107,7 +114,7 @@ MODEL.classifier = nn.Sequential(
 MODEL.to(DEVICE)  # Put the model to the GPU
 
 # Set the model to evaluation mode
-MODEL.load_state_dict(torch.load("models/AffectNet8_Maxvit_Combined/model_epoch1.pt"))
+MODEL.load_state_dict(torch.load("models/AffectNet8_Maxvit_Combined/model_epoch20.pt"))
 MODEL.to(DEVICE)
 MODEL.eval()
 

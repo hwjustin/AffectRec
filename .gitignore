@@ -1,7 +1,11 @@
 /dataset
 /dataset_new
-/results
+/results_64
+/results_128
 /archive
+
+/models/AffWild_Maxvit_Combined/inference.csv
+/models/AffWild_Maxvit_Combined/model.pt
 
 model.pt
 
