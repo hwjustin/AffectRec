@@ -2,6 +2,11 @@
 /dataset_new
 /results_64
 /results_128
+
+/results
+/results_rppg_org
+/results_rppg_2e_0.5
+
 /archive
 
 /models/AffWild_Maxvit_Combined/inference.csv
