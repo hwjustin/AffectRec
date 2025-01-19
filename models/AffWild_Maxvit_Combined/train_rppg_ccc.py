@@ -32,7 +32,7 @@ base_model = models.maxvit_t(weights="DEFAULT")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class ValenceArousalModel(nn.Module):
-    def __init__(self, base_model, rppg_dim=15):
+    def __init__(self, base_model, rppg_dim=31):
         super(ValenceArousalModel, self).__init__()
         self.backbone = base_model  # Use the entire MaxViT model
         block_channels = base_model.classifier[3].in_features  # Number of features before the classifier
@@ -77,6 +77,24 @@ class ValenceArousalModel(nn.Module):
         # Final classifier
         outputs = self.classifier(combined_features)
         return outputs
+
+# Justin: CCC loss
+def CCCLoss(x, y):
+    # Compute means
+    x_mean = torch.mean(x, dim=0)
+    y_mean = torch.mean(y, dim=0)
+    # Compute variances
+    x_var = torch.var(x, dim=0)
+    y_var = torch.var(y, dim=0)
+    # Compute covariance matrix
+    cov_matrix = torch.matmul(
+        (x - x_mean).permute(*torch.arange(x.dim() - 1, -1, -1)), y - y_mean
+    ) / (x.size(0) - 1)
+    # Compute CCC
+    numerator = 2 * cov_matrix
+    denominator = x_var + y_var + torch.pow((x_mean - y_mean), 2)
+    ccc = torch.mean(numerator / denominator)
+    return -ccc
 
 # **** Create dataset and data loaders ****
 class CustomDataset(Dataset):
@@ -126,14 +144,14 @@ class CustomDataset(Dataset):
         if os.path.exists(rppg_path):
             rppg_data = np.load(rppg_path)["rppg"]  # Load rPPG from .npz file
             frame_index = self.dataframe.index[idx]
-            start_idx = max(0, frame_index - 7)
-            end_idx = min(len(rppg_data), frame_index + 8)
+            start_idx = max(0, frame_index - 15)
+            end_idx = min(len(rppg_data), frame_index + 16)
             rppg_feature = rppg_data[start_idx:end_idx]
             # Pad if the range is less than 31
-            if len(rppg_feature) < 15:
-                rppg_feature = np.pad(rppg_feature, (0, 15 - len(rppg_feature)), mode="constant")
+            if len(rppg_feature) < 31:
+                rppg_feature = np.pad(rppg_feature, (0, 31 - len(rppg_feature)), mode="constant")
         else:
-            rppg_feature = np.zeros(15, dtype=np.float32)  # Handle missing rPPG
+            rppg_feature = np.zeros(31, dtype=np.float32)  # Handle missing rPPG
 
         rppg_feature = torch.tensor(rppg_feature, dtype=torch.float32)
 
@@ -214,6 +232,10 @@ MODEL = ValenceArousalModel(base_model).to(DEVICE)
 
 # MODEL.to(DEVICE)  # Put the model to the GPU
 
+# CCC loss
+val_loss = nn.MSELoss()
+aro_loss = nn.MSELoss()
+
 # Define (weighted) loss function
 weights = torch.tensor(
     [0.0448, 0.1026, 0.4630, 0.1551, 0.0362, 0.0621, 0.1035, 0.0329]
@@ -245,14 +267,18 @@ for epoch in range(NUM_EPOCHS):
             classes.to(DEVICE),
             labels.to(DEVICE),
         )
+        val_true = labels[:, 0]
+        # print("pineapple", val_true.shape)
+        aro_true = labels[:, 1]
         optimizer.zero_grad()
         with torch.autocast(device_type="cuda", dtype=torch.float16):
             outputs = MODEL(images, rppgs)
             outputs_cls = outputs[:, :8]
-            outputs_reg = outputs[:, 8:]
+            val_pred = outputs[:, 8]
+            aro_pred = outputs[:, 9]
             loss = criterion_cls(
                 outputs_cls.cuda(), classes.cuda()
-            ) + 5 * criterion_reg(outputs_reg.cuda(), labels.cuda())
+            ) + CCCLoss(val_pred.cuda(), val_true.cuda()) + CCCLoss(aro_pred.cuda(), aro_true.cuda())
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
@@ -277,12 +303,17 @@ for epoch in range(NUM_EPOCHS):
                 classes.to(DEVICE),
                 labels.to(DEVICE),
             )
+
+            val_true = labels[:, 0]
+            aro_true = labels[:, 1]
             outputs = MODEL(images, rppgs)
             outputs_cls = outputs[:, :8]
-            outputs_reg = outputs[:, 8:]
+            # outputs_reg = outputs[:, 8:]
+            val_pred = outputs[:, 8]
+            aro_pred = outputs[:, 9]
             loss = criterion_cls_val(
                 outputs_cls.cuda(), classes.cuda()
-            ) + 5 * criterion_reg(outputs_reg.cuda(), labels.cuda())
+            ) + CCCLoss(val_pred.cuda(), val_true.cuda()) + + CCCLoss(aro_pred.cuda(), aro_true.cuda())
             valid_loss += loss.item()
             _, predicted = torch.max(outputs_cls, 1)
             total += classes.size(0)

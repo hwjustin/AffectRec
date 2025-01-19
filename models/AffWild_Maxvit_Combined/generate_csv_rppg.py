@@ -25,7 +25,7 @@ base_model = models.maxvit_t(weights="DEFAULT")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class ValenceArousalModel(nn.Module):
-    def __init__(self, base_model, rppg_dim=31):
+    def __init__(self, base_model, rppg_dim=15):
         super(ValenceArousalModel, self).__init__()
         self.backbone = base_model  # Use the entire MaxViT model
         block_channels = base_model.classifier[3].in_features  # Number of features before the classifier
@@ -65,7 +65,7 @@ class ValenceArousalModel(nn.Module):
         # print("Pineapple1", rppg_features.shape)
 
         # Concatenate image and rPPG features
-        combined_features = torch.cat((image_features, rppg_features), dim=1)
+        combined_features = torch.cat((image_features, 0.3 * rppg_features), dim=1)
 
         # Final classifier
         outputs = self.classifier(combined_features)
@@ -124,14 +124,14 @@ class CustomDataset(Dataset):
         if os.path.exists(rppg_path):
             rppg_data = np.load(rppg_path)["rppg"]  # Load rPPG from .npz file
             frame_index = self.dataframe.index[idx]
-            start_idx = max(0, frame_index - 15)
-            end_idx = min(len(rppg_data), frame_index + 16)
+            start_idx = max(0, frame_index - 7)
+            end_idx = min(len(rppg_data), frame_index + 8)
             rppg_feature = rppg_data[start_idx:end_idx]
             # Pad if the range is less than 31
-            if len(rppg_feature) < 31:
-                rppg_feature = np.pad(rppg_feature, (0, 31 - len(rppg_feature)), mode="constant")
+            if len(rppg_feature) < 15:
+                rppg_feature = np.pad(rppg_feature, (0, 15 - len(rppg_feature)), mode="constant")
         else:
-            rppg_feature = np.zeros(31, dtype=np.float32)  # Handle missing rPPG
+            rppg_feature = np.zeros(15, dtype=np.float32)  # Handle missing rPPG
 
         rppg_feature = torch.tensor(rppg_feature, dtype=torch.float32)
 
@@ -181,7 +181,7 @@ MODEL = ValenceArousalModel(base_model).to(DEVICE)
 # MODEL.to(DEVICE)  # Put the model to the GPU
 
 # Set the model to evaluation mode
-MODEL.load_state_dict(torch.load("models/AffWild_Maxvit_Combined/model_epoch19.pt"))
+MODEL.load_state_dict(torch.load("models/AffWild_Maxvit_Combined/model_epoch17.pt"))
 MODEL.to(DEVICE)
 MODEL.eval()
 

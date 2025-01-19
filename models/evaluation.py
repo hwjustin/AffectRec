@@ -16,13 +16,13 @@ command = "python3 generate_csv.py"
 
 label_mapping = {
     "Neutral": 0,
-    "Happy": 1,
-    "Sad": 2,
-    "Surprise": 3,
-    "Fear": 4,
-    "Disgust": 5,
-    "Anger": 6,
-    "Contempt": 7,
+    "Anger": 1,
+    "Disgust": 2,
+    "Fear": 3,
+    "Happiness": 4,
+    "Sadness": 5,
+    "Surprise": 6,
+    "Other": 7,
 }
 
 
@@ -57,14 +57,14 @@ def concordance_correlation_coefficient(true_values, pred_values):
 def print_discrete(true_labels, pred_labels):
     if max(true_labels) == 7:
         class_names = [
+            "Neutral",
             "Anger",
             "Disgust",
             "Fear",
-            "Happy",
-            "Sad",
+            "Happiness",
+            "Sadness",
             "Surprise",
-            "Neutral",
-            "Contempt",
+            "Other",
         ]
     else:
         class_names = [
@@ -87,6 +87,10 @@ def print_discrete(true_labels, pred_labels):
         digits=3,
         output_dict=True,
     )
+    for category, metrics in map.items():
+        if category in class_names:
+            print(f"Class {category} - F1 Score: {metrics['f1-score']}")
+
     precision = map["weighted avg"]["precision"]
     recall = map["weighted avg"]["recall"]
     f1 = map["weighted avg"]["f1-score"]
@@ -102,11 +106,17 @@ def evaluate(path: str):
     if va:
         true_values = list(df["val_true"]) + list(df["aro_true"])
         pred_values = list(df["val_pred"]) + list(df["aro_pred"])
+        true_val_values = list(df["val_true"])
+        true_aro_values = list(df["aro_true"])
+        pred_val_values = list(df["val_pred"])
+        pred_aro_values = list(df["aro_pred"])
     if va:
         mse = mean_squared_error(true_values, pred_values)
         mae = mean_absolute_error(true_values, pred_values)
         rmse = root_mean_squared_error(true_values, pred_values)
         ccc = concordance_correlation_coefficient(true_values, pred_values)
+        ccc_val = concordance_correlation_coefficient(true_val_values, pred_val_values)
+        ccc_aro = concordance_correlation_coefficient(true_aro_values, pred_aro_values)
     print(path)
     if discrete:
         print_discrete(df["cat_true"], df["cat_pred"])
@@ -115,6 +125,8 @@ def evaluate(path: str):
         print(f"Mean Absolute Error (MAE): {mae:.4f}")
         print(f"Root Mean Squared Error (RMSE): {rmse:.4f}")
         print(f"Concordance Correlation Coefficient (CCC): {ccc:.4f}")
+        print(f"Concordance Correlation Coefficient (CCC) Val: {ccc_val:.4f}")
+        print(f"Concordance Correlation Coefficient (CCC) Aro: {ccc_aro:.4f}")
 
 
 for subdir in get_subdirectories("."):

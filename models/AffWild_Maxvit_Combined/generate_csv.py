@@ -114,7 +114,7 @@ MODEL.classifier = nn.Sequential(
 MODEL.to(DEVICE)  # Put the model to the GPU
 
 # Set the model to evaluation mode
-MODEL.load_state_dict(torch.load("models/AffectNet8_Maxvit_Combined/model_epoch20.pt"))
+MODEL.load_state_dict(torch.load("models/AffWild_Maxvit_Combined/model_best.pt"))
 MODEL.to(DEVICE)
 MODEL.eval()
 
