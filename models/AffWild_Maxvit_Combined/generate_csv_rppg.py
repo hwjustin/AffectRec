@@ -27,47 +27,35 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class ValenceArousalModel(nn.Module):
     def __init__(self, base_model, rppg_dim=15):
         super(ValenceArousalModel, self).__init__()
-        self.backbone = base_model  # Use the entire MaxViT model
-        block_channels = base_model.classifier[3].in_features  # Number of features before the classifier
+        self.backbone = base_model 
+        block_channels = base_model.classifier[3].in_features  
         self.backbone.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
             nn.LayerNorm(block_channels),
             nn.Linear(block_channels, block_channels),
             nn.Tanh(),
-            # nn.Linear(block_channels, 10, bias=False),
         )
 
-        # rPPG branch
         self.rppg_branch = nn.Sequential(
             nn.Linear(rppg_dim, 64),
             nn.ReLU(),
-            nn.Linear(64, block_channels),  # Match the backbone's output size
+            nn.Linear(64, block_channels),  
             nn.ReLU(),
         )
 
-        # Combined classifier
         self.classifier = nn.Sequential(
-            nn.Linear(block_channels * 2, 256),  # Combine image and rPPG features
+            nn.Linear(block_channels * 2, 256),  
             nn.ReLU(),
-            nn.Linear(256, 10),  # 8 classes (expressions) + 2 regression outputs (valence, arousal)
+            nn.Linear(256, 10),  
         )
 
     def forward(self, image, rppg):
-        # Extract features from the MaxViT backbone
         image_features = self.backbone(image) 
-        # print("Pineapple", image_features.shape)
-        # image_features = image_features.view(image_features.size(0), -1)  # Flatten
-
-        # Process rPPG features
-        # print("Pineapple", rppg)
         rppg_features = self.rppg_branch(rppg)
-        # print("Pineapple1", rppg_features.shape)
-
-        # Concatenate image and rPPG features
+  
         combined_features = torch.cat((image_features, 0.3 * rppg_features), dim=1)
 
-        # Final classifier
         outputs = self.classifier(combined_features)
         return outputs
 
@@ -169,16 +157,6 @@ valid_loader = DataLoader(
 
 # Initialize the model
 MODEL = ValenceArousalModel(base_model).to(DEVICE)
-# block_channels = MODEL.classifier[3].in_features
-# MODEL.classifier = nn.Sequential(
-#     nn.AdaptiveAvgPool2d(1),
-#     nn.Flatten(),
-#     nn.LayerNorm(block_channels),
-#     nn.Linear(block_channels, block_channels),
-#     nn.Tanh(),
-#     nn.Linear(block_channels, 10, bias=False),
-# )
-# MODEL.to(DEVICE)  # Put the model to the GPU
 
 # Set the model to evaluation mode
 MODEL.load_state_dict(torch.load("models/AffWild_Maxvit_Combined/model_best_rppg.pt"))

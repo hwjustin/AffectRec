@@ -34,63 +34,54 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class ValenceArousalModel(nn.Module):
     def __init__(self, base_model, rppg_dim=31):
         super(ValenceArousalModel, self).__init__()
-        self.backbone = base_model  # Use the entire MaxViT model
-        block_channels = base_model.classifier[3].in_features  # Number of features before the classifier
+        self.backbone = base_model 
+        block_channels = base_model.classifier[3].in_features  
         self.backbone.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
             nn.LayerNorm(block_channels),
             nn.Linear(block_channels, block_channels),
             nn.Tanh(),
-            # nn.Linear(block_channels, 10, bias=False),
         )
 
         # rPPG branch
         self.rppg_branch = nn.Sequential(
             nn.Linear(rppg_dim, 64),
             nn.ReLU(),
-            nn.Linear(64, block_channels),  # Match the backbone's output size
+            nn.Linear(64, block_channels), 
             nn.ReLU(),
         )
 
         # Combined classifier
         self.classifier = nn.Sequential(
-            nn.Linear(block_channels * 2, 256),  # Combine image and rPPG features
+            nn.Linear(block_channels * 2, 256), 
             nn.ReLU(),
-            nn.Linear(256, 10),  # 8 classes (expressions) + 2 regression outputs (valence, arousal)
+            nn.Linear(256, 10),  
         )
 
     def forward(self, image, rppg):
-        # Extract features from the MaxViT backbone
         image_features = self.backbone(image) 
-        # print("Pineapple", image_features.shape)
-        # image_features = image_features.view(image_features.size(0), -1)  # Flatten
-
-        # Process rPPG features
-        # print("Pineapple", rppg)
+      
         rppg_features = self.rppg_branch(rppg)
-        # print("Pineapple1", rppg_features.shape)
 
-        # Concatenate image and rPPG features
         combined_features = torch.cat((image_features, 0.3 * rppg_features), dim=1)
 
-        # Final classifier
         outputs = self.classifier(combined_features)
         return outputs
 
-# Justin: CCC loss
+
 def CCCLoss(x, y):
-    # Compute means
+
     x_mean = torch.mean(x, dim=0)
     y_mean = torch.mean(y, dim=0)
-    # Compute variances
+
     x_var = torch.var(x, dim=0)
     y_var = torch.var(y, dim=0)
-    # Compute covariance matrix
+
     cov_matrix = torch.matmul(
         (x - x_mean).permute(*torch.arange(x.dim() - 1, -1, -1)), y - y_mean
     ) / (x.size(0) - 1)
-    # Compute CCC
+
     numerator = 2 * cov_matrix
     denominator = x_var + y_var + torch.pow((x_mean - y_mean), 2)
     ccc = torch.mean(numerator / denominator)
@@ -139,19 +130,18 @@ class CustomDataset(Dataset):
             image = self.transform(image)
         
          # rPPG feature extraction
-        video_folder = os.path.basename(os.path.dirname(image_path))  # Get subfolder
+        video_folder = os.path.basename(os.path.dirname(image_path)) 
         rppg_path = os.path.join(self.rppg_dir, video_folder, "rppg_rppg.npz")
         if os.path.exists(rppg_path):
-            rppg_data = np.load(rppg_path)["rppg"]  # Load rPPG from .npz file
+            rppg_data = np.load(rppg_path)["rppg"] 
             frame_index = self.dataframe.index[idx]
             start_idx = max(0, frame_index - 15)
             end_idx = min(len(rppg_data), frame_index + 16)
             rppg_feature = rppg_data[start_idx:end_idx]
-            # Pad if the range is less than 31
             if len(rppg_feature) < 31:
                 rppg_feature = np.pad(rppg_feature, (0, 31 - len(rppg_feature)), mode="constant")
         else:
-            rppg_feature = np.zeros(31, dtype=np.float32)  # Handle missing rPPG
+            rppg_feature = np.zeros(31, dtype=np.float32)
 
         rppg_feature = torch.tensor(rppg_feature, dtype=torch.float32)
 
@@ -220,21 +210,7 @@ valid_loader = DataLoader(
 
 # Initialize the model
 MODEL = ValenceArousalModel(base_model).to(DEVICE)
-# block_channels = MODEL.classifier[3].in_features
-# MODEL.classifier = nn.Sequential(
-#     nn.AdaptiveAvgPool2d(1),
-#     nn.Flatten(),
-#     nn.LayerNorm(block_channels),
-#     nn.Linear(block_channels, block_channels),
-#     nn.Tanh(),
-#     nn.Linear(block_channels, 10, bias=False),
-# )
 
-# MODEL.to(DEVICE)  # Put the model to the GPU
-
-# CCC loss
-val_loss = nn.MSELoss()
-aro_loss = nn.MSELoss()
 
 # Define (weighted) loss function
 weights = torch.tensor(
@@ -268,7 +244,6 @@ for epoch in range(NUM_EPOCHS):
             labels.to(DEVICE),
         )
         val_true = labels[:, 0]
-        # print("pineapple", val_true.shape)
         aro_true = labels[:, 1]
         optimizer.zero_grad()
         with torch.autocast(device_type="cuda", dtype=torch.float16):
@@ -308,7 +283,6 @@ for epoch in range(NUM_EPOCHS):
             aro_true = labels[:, 1]
             outputs = MODEL(images, rppgs)
             outputs_cls = outputs[:, :8]
-            # outputs_reg = outputs[:, 8:]
             val_pred = outputs[:, 8]
             aro_pred = outputs[:, 9]
             loss = criterion_cls_val(
