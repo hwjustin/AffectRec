@@ -181,7 +181,7 @@ MODEL = ValenceArousalModel(base_model).to(DEVICE)
 # MODEL.to(DEVICE)  # Put the model to the GPU
 
 # Set the model to evaluation mode
-MODEL.load_state_dict(torch.load("models/AffWild_Maxvit_Combined/model_epoch17.pt"))
+MODEL.load_state_dict(torch.load("models/AffWild_Maxvit_Combined/model_best_rppg.pt"))
 MODEL.to(DEVICE)
 MODEL.eval()
 
