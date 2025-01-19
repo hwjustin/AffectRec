@@ -17,3 +17,6 @@ In this project, we develop a multi-task valence-arousal prediction model based 
 1. Move the trained `model.pt` into the `AffWild_Maxvit_Combined` folder.
 2. Run `generate_csv.py` or `generate_csv_rppg.py` in `models/AffWild_Maxvit_Combined` to generate inference file.
 3. Run `models/evaluation.py` to mesure the performance under classfication and regression metrics.
+
+## Acknowledgement
+Our code is based on `models/AffectNet8_Maxvit_Combined`, which is adapted from [CAGE: Circumplex Affect Guided Expression Inference](https://github.com/wagner-niklas/CAGE_expression_inference)
