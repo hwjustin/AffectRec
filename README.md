@@ -1,7 +1,7 @@
 # AffectRec - L334 Mini Project
 In this project, we develop a multi-task valence-arousal prediction model based on facial video frames and corresponding rPPG signals, trained in Aff-Wild2 dataset.
 
-![demo_image][demo.png]
+![demo_image](demo.png)
 
 ## Preprocessing
 1. pip install -r requirements.txt.
