@@ -11,7 +11,7 @@ In this project, we develop a multi-task valence-arousal prediction model based 
 
 ## Training
 1. Run `helper/weight_calculation.py` to generate weights for each expression category in cross-entropy loss.
-2. Run `train.py`, `train_rppg.py`, or `train_rppg_ccc.py` in `models/AffWild_Maxvit_Combined` to train the multi-task. without rPPG modality, multi-task with rPPG, and multi-task with rPPG under cross-entropy and ccc loss.
+2. Run `train.py`, `train_rppg.py`, or `train_rppg_ccc.py` in `models/AffWild_Maxvit_Combined` to train the multi-task without rPPG modality, multi-task with rPPG, and multi-task with rPPG under cross-entropy and ccc loss.
 
 ## Evaluation
 1. Move the trained `model.pt` into the `AffWild_Maxvit_Combined` folder.
